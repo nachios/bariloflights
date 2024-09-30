@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "bariloflights"
+version = "0.1.0"
+description = ""
+authors = ["Nacho S <nacho.santangelo@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+requests = "^2.32.3"
+pandas = "1.5.3"
+black = "^24.8.0"
+flake8 = "^7.1.1"
+psycopg2-binary = "2.9.9"
+pyarrow = "^17.0.0"
+apache-airflow = "^2.10.2"
+sqlalchemy = "1.4.53"
+numpy = "1.26.4"
+currencyapicom = "^0.1.1"
+pytest = "^8.3.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
