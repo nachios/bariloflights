@@ -2,3 +2,8 @@ config.py
 .env
 try_conn.py
 airflow.cfg
+logs/
+plugins/
+.pytest_cache/
+__pycache__/
+config/

@@ -1,63 +1,74 @@
 import requests
 import pandas as pd
-from datetime import datetime, date
-import os
+from datetime import datetime
+from airflow.models import Variable
+import pytz
 
 # API Request
-base_url = os.getenv('RAPIDAPI_BASE_URL')
-headers = {"x-rapidapi-key": os.getenv('RAPIDAPI_KEY'), "x-rapidapi-host": os.getenv('RAPIDAPI_HOST')}
+base_url = Variable.get('RAPIDAPI_BASE_URL')
+headers = {
+    "x-rapidapi-key": Variable.get('RAPIDAPI_KEY'),
+    "x-rapidapi-host": Variable.get('RAPIDAPI_HOST')
+}
 
 # Initialize flight_data list to store all flights
 flight_data = []
 
-def get_booking_flights(departureDate, returnDate):
+utc_min_3 = pytz.timezone('America/Buenos_Aires')
+current_date = datetime.now(utc_min_3)
+
+
+def get_booking_flights(departureDate, route):
     """
     Args:
         departureDate (str): Departure date in 'yyyy-MM-dd' format.
-        returnDate (str): Return date in 'yyyy-MM-dd' format.
-    We are using return journeys to get more information of different flights in a single request,
-    because we are able to get for each flight the price of it and not the combination of the two.
+        route (str): The route for the flight search (BRC to AEP or AEP to BRC).
+    Fetch one-way flights based on the specified route and departure date.
     """
 
-    # Validate the departureDate and returnDate format and range
+    # Validate the departureDate format and range
     departure_min = datetime.strptime("2025-02-01", "%Y-%m-%d")
     departure_max = datetime.strptime("2025-02-05", "%Y-%m-%d")
     return_min = datetime.strptime("2025-02-12", "%Y-%m-%d")
     return_max = datetime.strptime("2025-02-16", "%Y-%m-%d")
 
-    # Convert input to datetime objects
+    # Convert input to datetime object
     departure_date_dt = datetime.strptime(departureDate, "%Y-%m-%d")
-    return_date_dt = datetime.strptime(returnDate, "%Y-%m-%d")
 
-    # Add assertions for date ranges
+    # Add assertions for date range
     assert (
-        departure_min <= departure_date_dt <= departure_max
-    ), f"Departure date {departureDate} is out of range! It must be between 2025-02-01 and 2025-02-05."
+        (route == "BRC to AEP" and departure_min <= departure_date_dt <= departure_max) or
+        (route == "AEP to BRC" and return_min <= departure_date_dt <= return_max)
+    ), f"Departure date {departureDate} is out of range for route {route}!"
 
-    assert (
-        return_min <= return_date_dt <= return_max
-    ), f"Return date {returnDate} is out of range! It must be between 2025-02-12 and 2025-02-16."
-
-    # Pagination variables
+    # Initialize pagination variables
     current_page = 1
     total_pages = 1
 
-    # Querystring with dynamic departureDate and returnDate
-    querystring = {
-        "fromId": "BRC",
-        "toId": "AEP",
-        "departureDate": departureDate,
-        "returnDate": returnDate,
-        "cabinClass": "ECONOMY",
-        "adults": "2",
-        "nonstopFlightsOnly": "true",
-        "numberOfStops": "nonstop_flights",
-        "airlines": "FO,AR,WJ",
-    }
-
+    # Set query parameters based on the route
     while current_page <= total_pages:
-        # Update querystring with the current page
-        querystring["page"] = current_page
+        if route == "BRC to AEP":
+            querystring = {
+                "fromId": "BRC",
+                "toId": "AEP",
+                "departureDate": departureDate,
+                "cabinClass": "ECONOMY",
+                "numberOfStops": "nonstop_flights",
+                "adults": "1",
+                "airlines": "FO,AR,WJ",
+                "page": current_page
+            }
+        else:  # AEP to BRC
+            querystring = {
+                "fromId": "AEP",
+                "toId": "BRC",
+                "departureDate": departureDate,
+                "cabinClass": "ECONOMY",
+                "numberOfStops": "nonstop_flights",
+                "adults": "1",
+                "airlines": "FO,AR,WJ",
+                "page": current_page
+            }
 
         # Fetch response
         response = requests.get(base_url, headers=headers, params=querystring)
@@ -65,9 +76,13 @@ def get_booking_flights(departureDate, returnDate):
 
         # Extract flights info from response
         flights = data.get("data", {}).get("flights", [])
+        meta = data.get("meta", {})
+        # total_records = meta.get("totalRecords", 0)
+        total_pages = meta.get("totalPage", 1)
 
         if not flights:
-            print(f"No flight results found on page {current_page}.")
+            print(f"No flight results found for departure on {departureDate} for route {route}. "
+                  "Please check the API request limits.")
             break
 
         # Process flights data to get fields for each item
@@ -95,35 +110,37 @@ def get_booking_flights(departureDate, returnDate):
                         )
                         break
 
-                    flight_data.append(flight_info)
+            flight_data.append(flight_info)
 
-        # Check for pagination
-        meta = data.get("meta", {})
-        total_pages = meta.get("totalPage", 1)
-        current_page += 1
+        current_page += 1  # Move to the next page
 
     # Create DataFrame
     df = pd.DataFrame(flight_data)
 
-    # Save to Parquet
-    df.to_parquet(f"{date.today()}.data.parquet", index=False)
+    # Get filename with current date in UTC-3
+    filename = current_date.strftime("%Y-%m-%d")
 
-    print(f"Data successfully saved to {date.today()}.data.parquet.")
+    # Save to Parquet
+    df.to_parquet(f"/opt/airflow/data/{filename}.data.parquet", index=False)
+
+    print(f"Data successfully saved to {filename}.data.parquet.")
+
 
 def batch_get_booking_flights():
-    # Define the pairs of departure and return dates
+    # Define the pairs of departure dates for both routes
     date_pairs = [
-        ("2025-02-01", "2025-02-12"),
-        ("2025-02-02", "2025-02-13"),
-        ("2025-02-03", "2025-02-14"),
-        ("2025-02-04", "2025-02-15"),
-        ("2025-02-05", "2025-02-16"),
+        ("2025-02-01", "BRC to AEP"),
+        ("2025-02-02", "BRC to AEP"),
+        ("2025-02-03", "BRC to AEP"),
+        ("2025-02-04", "BRC to AEP"),
+        ("2025-02-05", "BRC to AEP"),
+        ("2025-02-12", "AEP to BRC"),
+        ("2025-02-13", "AEP to BRC"),
+        ("2025-02-14", "AEP to BRC"),
+        ("2025-02-15", "AEP to BRC"),
+        ("2025-02-16", "AEP to BRC"),
     ]
 
-    for departureDate, returnDate in date_pairs:
-        print(f"Fetching flights for departure on {departureDate} and return on {returnDate}...")
-        get_booking_flights(departureDate, returnDate)
-
-# Run the batch function
-if __name__ == "__main__":
-    batch_get_booking_flights()
+    for departureDate, route in date_pairs:
+        print(f"Fetching flights for departure on {departureDate} for route {route}...")
+        get_booking_flights(departureDate, route)
