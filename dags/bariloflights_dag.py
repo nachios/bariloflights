@@ -1,26 +1,27 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime
-from scripts.get_booking_flights import get_booking_flights
+from scripts.get_booking_flights import batch_get_booking_flights
 from scripts.transform_booking_flights import transform_flight_responses
-from scripts.distinct_flights import distinct_flight_data
 
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': datetime(2023, 10, 1),
-    'retries': 1,
+    'start_date': datetime(2024, 10, 1),
+    'retries': 0,
 }
 
 with DAG(
-        'bariloflights_dag', 
-        default_args=default_args, 
-        schedule_interval='@daily'
+        'bariloflights_dag',
+        default_args=default_args,
+        schedule_interval='0 22 * * *',
+        catchup=False
         ) as dag:
-    
+
     get_flights = PythonOperator(
         task_id='get_booking_flights_task',
-        python_callable=get_booking_flights
+        python_callable=batch_get_booking_flights
     )
 
     transform_responses = PythonOperator(
@@ -28,9 +29,10 @@ with DAG(
         python_callable=transform_flight_responses
     )
 
-    distinct_flights = PythonOperator(
-        task_id='distinct_flight_data_task',
-        python_callable=distinct_flight_data
+    trigger_distinct_flights = TriggerDagRunOperator(
+        task_id='trigger_distinct_bariloflights_dag',
+        trigger_dag_id='distinct_bariloflights_dag',
+        wait_for_completion=False
     )
 
-    get_flights >> transform_responses >> distinct_flights  # Setting task dependencies
+    get_flights >> transform_responses >> trigger_distinct_flights
