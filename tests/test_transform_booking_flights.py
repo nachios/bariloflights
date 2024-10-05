@@ -60,4 +60,5 @@ def test_transform_flight_responses(mock_exists, mock_get_connection, mock_read_
     # Call the function
     actual_result = transform_flight_responses()
 
-    assert actual_result.equals(expected_data), "The output data does not match the expected data. Please check values and data types."
+    assert actual_result.equals(expected_data), \
+           "The output data does not match the expected data. Please check values and data types."
