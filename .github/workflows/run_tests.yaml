@@ -1,0 +1,39 @@
+name: Unit Tests with pytest
+
+on: [push, pull_request]
+
+jobs:
+  run-tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout git repo
+      uses: actions/checkout@v2
+
+    - name: Set up Python 3.10.12
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.10.12
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Check Poetry Installation Path
+      run: |
+        echo "Checking installation directories..."
+        ls -la $HOME/.local/bin
+        ls -la /usr/local/bin
+
+    - name: Verify Poetry Installation
+      run: |
+        echo "Poetry version:"
+        poetry --version
+
+    - name: Install Dependencies
+      run: poetry install
+
+    - name: Run pytest
+      run: poetry run pytest tests

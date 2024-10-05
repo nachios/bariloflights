@@ -23,6 +23,7 @@ def transform_flight_responses():
     # Ensure the column names match the new table structure
     df["DepartureDate"] = pd.to_datetime(df["DepartureDate"])
     df["ReturnDate"] = pd.to_datetime(df["ReturnDate"])
+    df["SnapshotDate"] = pd.to_datetime(df["SnapshotDate"])
 
     # Rename columns to match the new table schema
     df.rename(columns={
