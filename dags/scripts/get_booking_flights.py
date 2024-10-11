@@ -23,25 +23,26 @@ def get_booking_flights(departureDate, route):
     Args:
         departureDate (str): Departure date in 'yyyy-MM-dd' format.
         route (str): The route for the flight search (BRC to AEP or AEP to BRC).
+        It's important that the route airports have the exact IATA codes in this format 'AAA to BBB'.
     Fetch one-way flights based on the specified route and departure date.
     """
 
-    # Validate the departureDate format and range
+    # Validation for departureDate format and range
     departure_min = datetime.strptime("2025-02-01", "%Y-%m-%d")
     departure_max = datetime.strptime("2025-02-05", "%Y-%m-%d")
     return_min = datetime.strptime("2025-02-12", "%Y-%m-%d")
     return_max = datetime.strptime("2025-02-16", "%Y-%m-%d")
 
-    # Convert input to datetime object
+    # Convert input to datetime
     departure_date_dt = datetime.strptime(departureDate, "%Y-%m-%d")
 
-    # Add assertions for date range
+    # Check route and departure dates for all flights
     assert (
         (route == "BRC to AEP" and departure_min <= departure_date_dt <= departure_max) or
         (route == "AEP to BRC" and return_min <= departure_date_dt <= return_max)
     ), f"Departure date {departureDate} is out of range for route {route}!"
 
-    # Initialize pagination variables
+    # Pagination variables
     current_page = 1
     total_pages = 1
 
@@ -70,14 +71,13 @@ def get_booking_flights(departureDate, route):
                 "page": current_page
             }
 
-        # Fetch response
+        # Fetch API response
         response = requests.get(base_url, headers=headers, params=querystring)
         data = response.json()
 
-        # Extract flights info from response
+        # Extract flights data info from response
         flights = data.get("data", {}).get("flights", [])
         meta = data.get("meta", {})
-        # total_records = meta.get("totalRecords", 0)
         total_pages = meta.get("totalPage", 1)
 
         if not flights:
@@ -117,7 +117,7 @@ def get_booking_flights(departureDate, route):
     # Create DataFrame
     df = pd.DataFrame(flight_data)
 
-    # Get filename with current date in UTC-3
+    # Get current date in UTC-3 for filename
     filename = current_date.strftime("%Y-%m-%d")
 
     # Save to Parquet
@@ -127,7 +127,7 @@ def get_booking_flights(departureDate, route):
 
 
 def batch_get_booking_flights():
-    # Define the pairs of departure dates for both routes
+    # Define the departure dates and routes
     date_pairs = [
         ("2025-02-01", "BRC to AEP"),
         ("2025-02-02", "BRC to AEP"),

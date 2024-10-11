@@ -7,10 +7,15 @@ from airflow.models import Variable
 
 
 def get_exchange_rate():
+    """
+    Args:
+        None
+    Get exchange rate for USD vs ARS (because prices are in USD and we want to show in ARS later).
+    """
     # Initialize the currency API client
     client = currencyapicom.Client(Variable.get('CURRENCYAPI_TOKEN'))
 
-    # Fetch exchange rate for today
+    # Fetch exchange rate for today (at UTC you can retrieve today's UTC-3 information)
     result = client.latest(currencies=['ARS'])
 
     # Extract necessary information
@@ -39,7 +44,7 @@ def get_exchange_rate():
         engine = create_engine(DATABASE_URL)
         print("Database connection established.")
 
-        # Attempt to insert the data into Redshift
+        # Insert the data into Redshift
         try:
             df.to_sql(
                 'usd_daily_exchange_rate',

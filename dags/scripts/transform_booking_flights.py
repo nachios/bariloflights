@@ -7,7 +7,13 @@ import os
 
 
 def transform_flight_responses():
-    # Get current date in UTC-3
+    """
+    Args:
+        None
+    Takes the parquet file to make all the necessary transformations with pandas.
+    Insert the transformed records into the Redshift connection.
+    """
+    # Get current date in UTC-3 for parquet filename
     utc_min_3 = pytz.timezone('America/Buenos_Aires')
     current_date = datetime.now(utc_min_3)
     filename = current_date.strftime("%Y-%m-%d")
@@ -20,12 +26,12 @@ def transform_flight_responses():
     # Load the data from Parquet file
     df = pd.read_parquet(parquet_file)
 
-    # Ensure the column names match the new table structure
+    # Ensure the column names match the Redshift table structure
     df["DepartureDate"] = pd.to_datetime(df["DepartureDate"])
     df["ReturnDate"] = pd.to_datetime(df["ReturnDate"])
     df["SnapshotDate"] = pd.to_datetime(df["SnapshotDate"])
 
-    # Rename columns to match the new table schema
+    # Rename columns to match the Redshift table schema
     df.rename(columns={
         "DepartureDate": "departure_date",
         "ReturnDate": "arrival_date",
@@ -39,7 +45,7 @@ def transform_flight_responses():
         "SnapshotDate": "snapshot_date"
     }, inplace=True)
 
-    # Calculate flight duration and total amount
+    # Calculate flight duration, currency fields, and total amount
     df["flight_duration"] = (
         (df["arrival_date"] - df["departure_date"]).dt.total_seconds() / 3600
     ).round(2)
@@ -59,11 +65,11 @@ def transform_flight_responses():
         f"@{redshift_conn.host}:{redshift_conn.port}/{redshift_conn.schema}"
     )
 
-    connection = None  # Initialize the connection variable
+    connection = None
     try:
         # Create SQLAlchemy engine and connect to the database
         engine = create_engine(DATABASE_URL)
-        connection = engine.connect()  # Explicit connection
+        connection = engine.connect()
         print("Database connection established.")
 
         # Insert new records into Redshift
@@ -86,4 +92,5 @@ def transform_flight_responses():
         engine.dispose()
         print("Database connection closed.")
 
+    # Return df for testing purposes
     return df

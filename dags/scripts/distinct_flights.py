@@ -4,6 +4,11 @@ from airflow.hooks.base import BaseHook
 
 
 def distinct_flight_data():
+    """
+    Args:
+        None
+    Drop duplicates of each flight, to understand which ones are still active/available.
+    """
     # Retrieve the Redshift connection details using Airflow connection ID
     redshift_conn = BaseHook.get_connection('PDA')
 
@@ -13,11 +18,11 @@ def distinct_flight_data():
         f"@{redshift_conn.host}:{redshift_conn.port}/{redshift_conn.schema}"
     )
 
-    connection = None  # Initialize connection variable
+    connection = None
     try:
         # Create SQLAlchemy engine and connect to the database
         engine = create_engine(DATABASE_URL)
-        connection = engine.connect()  # Explicit connection
+        connection = engine.connect()
         print("Database connection established.")
 
         # Read the 'flights_daily_snapshots' table into a DataFrame
@@ -28,11 +33,11 @@ def distinct_flight_data():
     except Exception as e:
         print(f"Error connecting to the database or reading data: {e}")
         if connection:
-            connection.close()  # Close connection if it was opened
+            connection.close()
             engine.dispose()
-        return  # Stop further execution if there's an error
+        return
 
-    # Proceed with data transformation since connection and data reading succeeded
+    # Proceed with data transformation
     df['departure_date'] = pd.to_datetime(df['departure_date'])
     df['snapshot_date'] = pd.to_datetime(df['snapshot_date'])
 
@@ -51,7 +56,7 @@ def distinct_flight_data():
         lambda x: 1 if pd.notna(x) and x.date() >= latest_snapshot_date else 0
     )
 
-    # Select the relevant columns: 'flight_code', 'departure_date', 'origin', 'destination', 'airline_code', 'is_active'
+    # Retrieve relevant columns
     df_result = df_final[['flight_code', 'departure_date', 'origin', 'destination', 'airline_code', 'is_active']]
 
     try:

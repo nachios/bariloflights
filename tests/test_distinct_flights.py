@@ -27,7 +27,7 @@ expected_data = pd.DataFrame({
 @patch('pandas.read_sql_table', return_value=sample_data)
 @patch('airflow.hooks.base.BaseHook.get_connection')
 def test_distinct_flight_data(mock_get_connection, mock_read_sql_table, mock_create_engine):
-    # Mocking the connection object returned by BaseHook.get_connection
+    # Mocking the connection returned by BaseHook.get_connection
     mock_connection = MagicMock()
     mock_connection.login = 'user'
     mock_connection.password = 'password'
@@ -36,13 +36,13 @@ def test_distinct_flight_data(mock_get_connection, mock_read_sql_table, mock_cre
     mock_connection.schema = 'schema'
     mock_get_connection.return_value = mock_connection
 
-    # Mocking the engine's connect method to avoid actual database connection
+    # Mocking the engine's connect method
     mock_engine = MagicMock()
     mock_create_engine.return_value = mock_engine
-    mock_engine.connect.return_value = MagicMock()  # Mocking the connection object
+    mock_engine.connect.return_value = MagicMock()
 
     # Call the function
     actual_result = distinct_flight_data()
 
-    # Assertions
+    # Assertion
     assert actual_result.equals(expected_data), "The output data does not match the expected data."
