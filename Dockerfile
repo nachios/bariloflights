@@ -16,7 +16,7 @@ ENV PATH="/root/.local/bin:$PATH"
 COPY . /app/
 
 # Create a data directory for outputs
-RUN mkdir -p /app/data && chown -R airflow:airflow /app/data
+RUN mkdir -p /app/data && chown -R airflow /app/data
 
 # Install dependencies
 RUN poetry install

@@ -99,7 +99,7 @@ def get_booking_flights(departureDate, route):
                         "Price": None,
                         "VAT": None,
                         "CurrencyCode": None,
-                        "SnapshotDate": datetime.now(),
+                        "SnapshotDate": datetime.now(utc_min_3),
                     }
                     for traveler_price in flight.get("travelerPrices", []):
                         price_info = traveler_price.get("price", {})
