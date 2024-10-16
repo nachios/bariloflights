@@ -15,20 +15,30 @@ To start you have to run the following bash commands in your terminal:
 ```bash
   git clone https://github.com/nachios/bariloflights.git
   echo -e "AIRFLOW_UID=$(id -u)" > .env
-  docker-compose up airflow-init
+  docker compose up airflow-init
 ```
 
 For more information, it can be found in the [Airflow documentation](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#initializing-environment)
 
+When it finished the first docker command you can run the following to bring the rest of the containers.
+```bash
+docker compose down
+docker compose up -d
+```
+
 These commands will build and start all docker containers needed for this project.
+
+The next step would be logging in the Airflow webserver and set the connection and variables credentials that can be found in [the environment variables section](#environment-variables). This is crucial to the application operation.
 
 ## Environment Variables
 
 All environment variables used in this project, except one, are set directly in the Airflow UI/Webserver. The API credentials are created as Variables and the Redshift credentials are inserted as a Connection. 
 
-The `AIRFLOW_UID` was set previously in the [getting started section](#getting-started) and is the only set outside of the Airflow UI/Webserver.
+The `AIRFLOW_UID` is the only set outside of the Airflow UI/Webserver.
 
 In this project you will have to work with RapidAPI and CurrencyAPI which can be obtained free with certain limits on their platforms ([More information in the API documentation section](#api-documentation)). These two are our sources of information and our destination is a AWS Redshift database.
+
+You can find below all the environment variables that should exist in this project.
 
 - `RAPIDAPI_KEY`
 - `RAPIDAPI_HOST`
@@ -82,6 +92,14 @@ The repository has two specific github actions that are executed after each push
 The first one is solely for linting all the project python files in order to have a more readable code and maintaing the best practices.
 
 The second consists of two unit tests which check that the transformation scripts are executing correctly it's function in the pipeline process.
+
+## Metabase
+
+In the docker compose a Metabase service is created as well. This Metabase has a Dashboard containing different KPIs and visualizations to track easily the information that is obtained with the project. Like how many flights have been tracked, filtered by the province of origin, the airline, and much more that can help us decide when it's a good moment to make the purchase.
+
+To access the metabase instance you have to provide the following credentials:
+- Mail: ``
+- Pass: ``
 
 ## API Documentation
 To get more information about the APIs used in this project, you can look out more information here:
