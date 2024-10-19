@@ -97,9 +97,7 @@ The second consists of two unit tests which check that the transformation script
 
 In the docker compose a Metabase service is created as well. This Metabase has a Dashboard containing different KPIs and visualizations to track easily the information that is obtained with the project. Like how many flights have been tracked, filtered by the province of origin, the airline, and much more that can help us decide when it's a good moment to make the purchase.
 
-To access the metabase instance you have to provide the following credentials:
-- Mail: ``
-- Pass: ``
+To access the metabase instance you have to contact the project owner.
 
 ## API Documentation
 To get more information about the APIs used in this project, you can look out more information here:
